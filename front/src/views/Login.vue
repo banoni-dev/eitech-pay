@@ -1,9 +1,9 @@
 <template>
   <div class="page page-center d-flex flex-column">
     <div class="container-tight py-4">
-      <div class="text-center mb-4">
+      <!-- <div class="text-center mb-4">
         <a href="#" class="navbar-brand navbar-brand-autodark">Logo</a>
-      </div>
+      </div> -->
 
       <form class="card card-md" @submit.prevent="handleSubmit">
         <div class="card-body">
@@ -29,12 +29,12 @@
               placeholder="Password"
               required
             />
-            <span class="form-label-description mb-4">
+            <!-- <span class="form-label-description mb-4">
               <a href="#">I forgot password</a>
-            </span>
+            </span> -->
           </div>
 
-          <div class="mb-3">
+          <!-- <div class="mb-3">
             <label class="form-check">
               <input
                 v-model="form.remember"
@@ -43,7 +43,7 @@
               />
               <span class="form-check-label">Remember me</span>
             </label>
-          </div>
+          </div> -->
 
           <!-- CAPTCHA shown only after 3 failed attempts -->
           <div class="mb-3" v-if="captchaEnabled">
@@ -71,17 +71,18 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { reactive, ref, computed, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../store/auth'
 // @ts-ignore
 import VueRecaptcha from 'vue3-recaptcha2';
 
 const router = useRouter()
+const route = useRoute()
 const auth = useAuthStore()
 const loading = ref(false)
 
-const recaptchaSiteKey = '6Lfq_morAAAAAAXrss0x8-HqyvrAGVZs5OgTPOwZ'
+const recaptchaSiteKey = '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI'
 
 const form = reactive({
   username: '',
@@ -94,6 +95,13 @@ const captchaToken = ref('')
 const recaptcha = ref<InstanceType<typeof VueRecaptcha> | null>(null)
 
 const captchaEnabled = computed(() => failedAttempts.value >= 3)
+
+// Redirect if already logged in
+onMounted(() => {
+  if (auth.isLoggedIn) {
+    router.push('/dashboard')
+  }
+})
 
 const onCaptchaVerified = (token: string) => {
   captchaToken.value = token
@@ -113,7 +121,9 @@ const handleSubmit = async () => {
   loading.value = true
   try {
     await auth.login(form.username, form.password, captchaToken.value)
-    router.push('/dashboard')
+    // Redirect to intended page or dashboard
+    const redirectTo = route.query.redirect as string || '/dashboard'
+    router.push(redirectTo)
   } catch (error: any) {
     failedAttempts.value += 1
     if (captchaEnabled.value) {

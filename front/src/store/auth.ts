@@ -6,6 +6,7 @@ export const useAuthStore = defineStore('auth', {
     adminName: null as string | null,
     isLoggedIn: false,
     loading: false,
+    initialized: false,
   }),
 
   actions: {
@@ -27,12 +28,20 @@ export const useAuthStore = defineStore('auth', {
     },
 
     async restoreSession() {
+      const token = authService.getToken();
+      if (!token) {
+        this.initialized = true;
+        return;
+      }
+
       try {
         const res = await authService.checkSession();
         this.adminName = res.adminName;
         this.isLoggedIn = true;
       } catch {
         this.logout();
+      } finally {
+        this.initialized = true;
       }
     }
   }
